@@ -1,36 +1,75 @@
-from pytgcalls import PyTgCalls
-from pytgcalls.types.input_stream import InputAudioStream
-from pytgcalls.types.input_stream.input_file import AudioPiped
-from pytgcalls.types.stream import StreamType
-
-from telethon import TelegramClient
-import yt_dlp
 import asyncio
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+import yt_dlp
+from pyrogram.types import Message
+from pytgcalls import PyTgCalls
+from pytgcalls.types.stream import StreamAudioEnded
+from pytgcalls.types.input_stream import AudioPiped
+from telethon import TelegramClient
+from telethon.tl.functions.channels import JoinChannelRequest
 
 class Assistant:
     def __init__(self, api_id, api_hash):
-        self.client = TelegramClient('assistant', api_id, api_hash)
+        self.client = TelegramClient("userbot", api_id, api_hash)
         self.pytgcalls = PyTgCalls(self.client)
-        self.queue = []
-        self.current_chat = None
-        self.now_playing = None
-
-        asyncio.create_task(self.start())
+        self.queue = {}
+        self.now_playing = {}
 
     async def start(self):
         await self.client.start()
         await self.pytgcalls.start()
 
+    async def join_chat(self, chat_id):
+        try:
+            await self.client(JoinChannelRequest(chat_id))
+        except:
+            pass
+
+    async def play(self, chat_id, query):
+        audio_file = await self.download_audio(query)
+        if chat_id not in self.queue:
+            self.queue[chat_id] = []
+
+        self.queue[chat_id].append(audio_file)
+
+        if chat_id not in self.now_playing:
+            await self._play_next(chat_id)
+
+    async def _play_next(self, chat_id):
+        if self.queue[chat_id]:
+            audio = self.queue[chat_id].pop(0)
+            await self.pytgcalls.join_group_call(
+                chat_id,
+                AudioPiped(audio),
+            )
+            self.now_playing[chat_id] = audio
+        else:
+            await self.stop(chat_id)
+
+    async def pause(self, chat_id):
+        await self.pytgcalls.pause_stream(chat_id)
+
+    async def resume(self, chat_id):
+        await self.pytgcalls.resume_stream(chat_id)
+
+    async def skip(self, chat_id):
+        await self.pytgcalls.leave_group_call(chat_id)
+        self.now_playing.pop(chat_id, None)
+        await self._play_next(chat_id)
+
+    async def stop(self, chat_id):
+        await self.pytgcalls.leave_group_call(chat_id)
+        self.queue[chat_id] = []
+        self.now_playing.pop(chat_id, None)
+
+    async def get_queue(self, chat_id):
+        return "\n".join(self.queue.get(chat_id, [])) or "Queue kosong."
+
     async def download_audio(self, query):
         ydl_opts = {
             'format': 'bestaudio/best',
-            'outtmpl': f'temp/%(title)s.%(ext)s',
-            'noplaylist': True,
+            'outtmpl': 'downloads/%(title)s.%(ext)s',
             'quiet': True,
+            'noplaylist': True,
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
@@ -41,48 +80,3 @@ class Assistant:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(f"ytsearch:{query}", download=True)['entries'][0]
             return ydl.prepare_filename(info).replace('.webm', '.mp3').replace('.m4a', '.mp3')
-
-    async def play(self, query, chat_id):
-        file_path = await self.download_audio(query)
-
-        self.queue.append((file_path, chat_id))
-
-        # Jika belum memutar apapun
-        if not self.current_chat:
-            await self._join_and_play()
-
-    async def _join_and_play(self):
-        if not self.queue:
-            return
-
-        file_path, chat_id = self.queue.pop(0)
-        self.current_chat = chat_id
-        self.now_playing = file_path
-
-        await self.pytgcalls.join_group_call(
-            chat_id,
-            AudioPiped(file_path),
-            stream_type=StreamType().pulse_stream,
-        )
-
-    async def pause(self):
-        if self.current_chat:
-            await self.pytgcalls.pause_stream(self.current_chat)
-
-    async def resume(self):
-        if self.current_chat:
-            await self.pytgcalls.resume_stream(self.current_chat)
-
-    async def skip(self):
-        if self.queue:
-            await self.stop()  # stop current
-            await self._join_and_play()
-
-    async def stop(self):
-        if self.current_chat:
-            await self.pytgcalls.leave_group_call(self.current_chat)
-            self.current_chat = None
-            self.now_playing = None
-
-    async def get_queue(self):
-        return "\n".join([os.path.basename(f) for f, _ in self.queue]) if self.queue else "Queue kosong."
