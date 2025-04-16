@@ -24,9 +24,9 @@ assistant = Assistant(API_ID, API_HASH)
 @bot.on(events.NewMessage(pattern='/play (.*)'))
 async def play_music(event):
     song_name = event.pattern_match.group(1)
-    await event.reply(f"🔊 Playing: {song_name}")
-    # Call the assistant to play the song
-    await assistant.play(song_name)
+    chat_id = event.chat_id
+    await event.reply(f"🔊 Mencari dan memutar: {song_name}")
+    await assistant.play(song_name, chat_id)
 
 @bot.on(events.NewMessage(pattern='/pause'))
 async def pause_music(event):
