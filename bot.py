@@ -1,38 +1,65 @@
-from telethon import TelegramClient
-from telethon import events
 import json
+from telethon import TelegramClient, events
+from telethon.tl.custom import Button
 
 # Load config
-with open('data/config.json', 'r') as f:
+with open("config.json", "r") as f:
     config = json.load(f)
 
-api_id = config['api_id']
-api_hash = config['api_hash']
-bot_token = config['bot_token']
+API_ID = config["api_id"]
+API_HASH = config["api_hash"]
+BOT_TOKEN = config["bot_token"]
 
-# Setup Telethon client
-client = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
+bot = TelegramClient("bot", API_ID, API_HASH)
 
-# Define some command handlers
-@client.on(events.NewMessage(pattern=r'.kick'))
-async def kick_user(event):
-    # Example: Kick user command
-    if event.reply_to_msg_id:
-        message = await event.get_reply_message()
-        user = message.sender_id
-        await event.chat.kick_participant(user)
-        await event.respond(f'User {user} kicked.')
 
-@client.on(events.NewMessage(pattern=r'.gcast'))
-async def broadcast_message(event):
-    # Example: Send broadcast to all group chats
-    if event.text:
-        text = event.text.split(' ', 1)[1]  # Get message after .gcast
-        for chat in await client.get_dialogs():
-            if chat.is_group:
-                await client.send_message(chat, text)
-                await event.respond(f'Broadcast sent to {chat.title}')
+async def start():
+    await bot.start(bot_token=BOT_TOKEN)
+    print("🤖 Bot aktif")
 
-# Run the bot
-client.start()
-client.run_until_disconnected()
+    # Menu utama
+    @bot.on(events.NewMessage(pattern="/menu"))
+    async def show_menu(event):
+        header = (
+            "via @navyfavbot\n"
+            "Inline Help\n"
+            "Prefixes: g\n"
+            "Plugins: 83\n"
+            "serpa gengs\n"
+            "NavyUbot by @kenapanan"
+        )
+
+        buttons = [
+            [Button.inline("Pin", b"pin"), Button.inline("Admin", b"admin"), Button.inline("Spam", b"spam")],
+            [Button.inline("Dll", b"dll1"), Button.inline("Dll", b"dll2"), Button.inline("Dll", b"dll3")],
+            [Button.inline("Dll", b"dll4"), Button.inline("Dll", b"dll5"), Button.inline("Dll", b"dll6")],
+            [Button.inline("Prev", b"prev"), Button.inline("Kembali", b"back"), Button.inline("Next", b"next")]
+        ]
+
+        await event.respond(header, buttons=buttons)
+
+    # Handle tombol
+    @bot.on(events.CallbackQuery)
+    async def callback_handler(event):
+        data = event.data.decode("utf-8")
+
+        if data == "pin":
+            await event.respond(
+                "**Pin Menu**\n\n"
+                "`.pin` — untuk menyematkan pesan.\n"
+                "`.unpin` — untuk melepas sematan."
+            )
+        elif data == "admin":
+            await event.respond(
+                "**Admin Menu**\n\n"
+                "`.promote` — angkat jadi admin.\n"
+                "`.demote` — turunkan admin."
+            )
+        elif data == "spam":
+            await event.respond(
+                "**Spam Menu**\n\n"
+                "`.mute` — bisukan pengguna.\n"
+                "`.ban` — blokir pengguna."
+            )
+        else:
+            await event.answer("Konten belum tersedia", alert=True)
