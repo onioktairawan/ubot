@@ -1,0 +1,4 @@
+pyrogram
+asyncio
+requests
+telethon==1.24.0
