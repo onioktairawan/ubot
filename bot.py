@@ -3,6 +3,7 @@ import logging
 from telethon import TelegramClient, events
 from dotenv import load_dotenv
 from assistant import Assistant
+import asyncio
 
 # Load environment variables
 load_dotenv()
@@ -57,11 +58,11 @@ async def queue_music(event):
 async def ping(event):
     await event.reply("Pong!")
 
-# Start the bot
+# Start the bot using the existing event loop
 async def main():
     await bot.start()
     await bot.run_until_disconnected()
 
 if __name__ == '__main__':
-    import asyncio
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()  # Get the current event loop
+    loop.run_until_complete(main())  # Run the main async function
