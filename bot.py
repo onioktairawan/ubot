@@ -7,10 +7,16 @@ with open('config.json', 'r') as f:
 
 API_ID = config['API_ID']
 API_HASH = config['API_HASH']
-BOT_TOKEN = config['BOT_TOKEN']
 OWNER_ID = config['OWNER_ID']
+PHONE_NUMBER = config['PHONE_NUMBER']
 
 client = TelegramClient('userbot', API_ID, API_HASH)
+
+...
+
+# Start the bot
+client.start(phone=PHONE_NUMBER)
+client.run_until_disconnected()
 
 # Load users
 with open('users.json', 'r') as f:
