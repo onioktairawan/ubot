@@ -2,7 +2,6 @@ import asyncio
 import yt_dlp
 from pyrogram.types import Message
 from pytgcalls import PyTgCalls
-from pytgcalls.types.input_stream import AudioPiped
 from telethon import TelegramClient
 from telethon.tl.functions.channels import JoinChannelRequest
 
