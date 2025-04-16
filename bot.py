@@ -28,30 +28,29 @@ async def play_music(event):
     await event.reply(f"🔊 Playing: {song_name}")
     await assistant.play(chat_id, song_name)
 
-
 @bot.on(events.NewMessage(pattern='/pause'))
 async def pause_music(event):
     await event.reply("⏸️ Paused")
-    await assistant.pause()
+    await assistant.pause(event.chat_id)
 
 @bot.on(events.NewMessage(pattern='/resume'))
 async def resume_music(event):
     await event.reply("▶️ Resumed")
-    await assistant.resume()
+    await assistant.resume(event.chat_id)
 
 @bot.on(events.NewMessage(pattern='/skip'))
 async def skip_music(event):
     await event.reply("⏭️ Skipped")
-    await assistant.skip()
+    await assistant.skip(event.chat_id)
 
 @bot.on(events.NewMessage(pattern='/stop'))
 async def stop_music(event):
     await event.reply("🛑 Stopped")
-    await assistant.stop()
+    await assistant.stop(event.chat_id)
 
 @bot.on(events.NewMessage(pattern='/queue'))
 async def queue_music(event):
-    queue = await assistant.get_queue()
+    queue = await assistant.get_queue(event.chat_id)
     await event.reply(f"Current queue: {queue}")
 
 @bot.on(events.NewMessage(pattern='/ping'))
